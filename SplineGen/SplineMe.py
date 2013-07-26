@@ -126,14 +126,7 @@ for key in varDictionary.keys():
 fileobj.close()
 ############################### END OF PURE PYTHON CODE ###############################
 
-#x,y = np.mgrid[0:1:0.025,0:1:0.025]
-#z = interpolate.bisplev(x[:,0],y[0,:],tck)
-#fig = plt.figure(1)
-#ax = fig.gca(projection='3d')
-#ax.plot_wireframe(betagrid,lambdagrid,Cp)
-#plt.title("Cp table")
-#ax.plot_wireframe(x,y,z,color='r')
-#plt.show()
+
 
 
 ########## Spline eval code -> Code generated C ###########
@@ -221,8 +214,8 @@ def EvalSpline(x,y, knots_x, knots_y, checkpoints, Ux, Uy, Px, Py, p, q, n):
 
 
 
-x = 5.
-y = 3.
+x = 0.
+y = 7.
 
 ix = findspan(x,knots_x)
 iy = findspan(y,knots_y)
@@ -262,3 +255,13 @@ S, dSdx, dSdy = EvalSpline(x, y, knots_x, knots_y, checkpoints, Ux, Uy, Px, Py, 
 print "Compare spline interp", S, z  
 print "Compare x derivative", dzdx, dSdx
 print "Compare y derivative", dzdy, dSdy
+
+x,y = np.mgrid[beta[0]:beta[-1]:0.25,lambda_[0]:lambda_[-1]:0.25]
+z = interpolate.bisplev(x[:,0],y[0,:],tck)
+fig = plt.figure(1)
+ax = fig.gca(projection='3d')
+ax.plot_wireframe(betagrid,lambdagrid,Cp)
+plt.title("Cp table")
+ax.plot_wireframe(x,y,z,color='r')
+plt.hold
+plt.show()

@@ -59,7 +59,7 @@ beta0 = Cptable(1,index_beta_min:index_beta_max);
 Cp0 = Cptable(index_lambda_min:index_lambda_max,index_beta_min:index_beta_max);
 
 % Data grid
-NData = 30;
+NData = 80;
 
 lambda_Data = linspace(lambda0(1),lambda0(end),NData);
 beta_Data = linspace(beta0(1),beta0(end),NData+1);

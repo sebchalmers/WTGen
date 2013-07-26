@@ -27,25 +27,46 @@ float Pijeval(const float mat[],int i,int j,const int n)
 {
 // Line major "matrix" P -> take out i,j entry
     
-    printf("index = %d\n", i*n + j);
+    //printf("index = %d\n", i*n + j);
     return mat[i*n + j];
 }
 
+/* 
 float Blend(float x_basis[], float y_basis[], int i_x, int i_y, const float P[], const int n, int length_x_basis, int length_y_basis)
 {
-    printf("Blending \n");
+    //printf("Blending \n");
     float S = 0;
+    float x_basis_k1;
     for (int k1 = 0; k1 < length_x_basis; k1++)
     {
+        x_basis_k1 = x_basis[k1];
         for (int k2 = 0; k2 < length_y_basis; k2++)
         {
-            S += Pijeval(P,i_x-k1,i_y-k2,n)*x_basis[k1]*y_basis[k2];
+            S += Pijeval(P,i_x-k1,i_y-k2,n)*x_basis_k1*y_basis[k2];
         }
     }
     
     return S;
 }
+This Blend makes the code a few % slower than the next one:
+*/
 
+float Blend(float x_basis[], float y_basis[], int i_x, int i_y, const float P[], const int n, int length_x_basis, int length_y_basis)
+{
+    //printf("Blending \n");
+    float S = 0;
+    float y_basis_k2;
+    for (int k2 = 0; k2 < length_y_basis; k2++)
+    {
+        y_basis_k2 = y_basis[k2];
+        for (int k1 = 0; k1 < length_x_basis; k1++)
+        {
+            S += Pijeval(P,i_x-k1,i_y-k2,n)*x_basis[k1]*y_basis_k2;
+        }
+    }
+    
+    return S;
+}
 
 
 int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
@@ -113,18 +134,17 @@ int EvalSpline(float x, float y, float out[])
     float basis_x[p+1];
     float basis_y[q+1];
     
+
     basisFuncs(basis_x, x, p, knots_x, ix);
     basisFuncs(basis_y, y, q, knots_y, iy);
     
-    
-    //printf("Address basis_y[-1]: %p \n", &basis_y[q]);
     out[0] = Blend(basis_x, basis_y, ix, iy, P, n, p+1, q+1);
 
     int ix_tilde = findspan(x, Ux, length_Ux);
     int iy_tilde = findspan(y, Uy, length_Uy);
     
-    float basis_x_tilde[p] = {0};
-    float basis_y_tilde[q] = {0};
+    float basis_x_tilde[p];
+    float basis_y_tilde[q];
     
     basisFuncs(basis_x_tilde, x, p-1, Ux, ix_tilde);
     basisFuncs(basis_y_tilde, y, q-1, Uy, iy_tilde);
@@ -138,13 +158,15 @@ int EvalSpline(float x, float y, float out[])
 
 int main()
 {
-    float x = 5.;
-    float y = 3.;
+    float x = 0.;
+    float y = 7.;
     
     float out[3];
-    
-    EvalSpline(x,y,out);
-    
+    for (int k=0;k<1000000;k++)
+    {
+        //printf("k = %d",k);
+        EvalSpline(x,y,out);
+    }
     printf("s = %f\n",out[0]);
     printf("dsdx = %f \n",out[1]);
     printf("dsdy = %f \n",out[2]);
