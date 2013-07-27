@@ -23,57 +23,22 @@ int findspan(float xi, const float knots[], const int lenght_knots)
     return index_low;
 }
 
-float Pijeval(const float mat[],int i,int j,const int n)
-{
-// Line major "matrix" P -> take out i,j entry
-    
-    //printf("index = %d\n", i*n + j);
-    return mat[i*n + j];
-}
 
-/* 
-float Blend(float x_basis[], float y_basis[], int i_x, int i_y, const float P[], const int n, int length_x_basis, int length_y_basis)
-{
-    //printf("Blending \n");
-    float S = 0;
-    float x_basis_k1;
-    for (int k1 = 0; k1 < length_x_basis; k1++)
-    {
-        x_basis_k1 = x_basis[k1];
-        for (int k2 = 0; k2 < length_y_basis; k2++)
-        {
-            S += Pijeval(P,i_x-k1,i_y-k2,n)*x_basis_k1*y_basis[k2];
-        }
-    }
-    
-    return S;
-}
-This Blend makes the code a few % slower than the next one:
-*/
+#include "Blender.h"  // Unrolled blending function
 
-float Blend(float x_basis[], float y_basis[], int i_x, int i_y, const float P[], const int n, int length_x_basis, int length_y_basis)
-{
-    //printf("Blending \n");
-    float S = 0;
-    float y_basis_k2;
-    for (int k2 = 0; k2 < length_y_basis; k2++)
-    {
-        y_basis_k2 = y_basis[k2];
-        for (int k1 = 0; k1 < length_x_basis; k1++)
-        {
-            S += Pijeval(P,i_x-k1,i_y-k2,n)*x_basis[k1]*y_basis_k2;
-        }
-    }
-    
-    return S;
-}
+
+//#include "BasisFunc.h"
+
+
 
 
 int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
 {
     //Minimal implementation of the Cox-deBoor formula
-       
-    //
+
+    
+    // UNROLLING THESE LOOPS IMPROVES THE SPEED BY ONLY A FEW %
+    
     int iplus = i+1;
     int pminus;
     int ipluspminusk;
@@ -122,24 +87,26 @@ int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
 
 
 
+
+
 int EvalSpline(float x, float y, float out[])
 {
     
     #include "SplineData.h"
     
+    // Eval Spline
     int ix = findspan(x, knots_x, length_knots_x);
     int iy = findspan(y, knots_y, length_knots_y);
      
-    
-    float basis_x[p+1];
+    float basis_x[p+1];      
     float basis_y[q+1];
     
-
     basisFuncs(basis_x, x, p, knots_x, ix);
     basisFuncs(basis_y, y, q, knots_y, iy);
     
-    out[0] = Blend(basis_x, basis_y, ix, iy, P, n, p+1, q+1);
+    out[0] = Blend44(basis_x, basis_y, ix, iy, P, n);
 
+    // Eval derivatives
     int ix_tilde = findspan(x, Ux, length_Ux);
     int iy_tilde = findspan(y, Uy, length_Uy);
     
@@ -148,26 +115,44 @@ int EvalSpline(float x, float y, float out[])
     
     basisFuncs(basis_x_tilde, x, p-1, Ux, ix_tilde);
     basisFuncs(basis_y_tilde, y, q-1, Uy, iy_tilde);
+
+    out[1] = Blend34(basis_x_tilde, basis_y,       ix_tilde, iy,       Px, n   );
+    out[2] = Blend43(basis_x      , basis_y_tilde, ix,       iy_tilde ,Py, n-1 );
+
+    //Eval curvature
+    int ixx = findspan(x, Uxx, length_Uxx);
+    int iyy = findspan(y, Uyy, length_Uyy);
     
+    float basis_xx[p-1];
+    float basis_yy[q-1];
     
-    out[1] = Blend(basis_x_tilde, basis_y,       ix_tilde, iy,       Px, n,   p,   q+1);
-    out[2] = Blend(basis_x      , basis_y_tilde, ix,       iy_tilde ,Py, n-1, p+1, q  );
+    basisFuncs(basis_xx,   x,   p-2,   Uxx,    ixx);
+    basisFuncs(basis_yy,   y,   q-2,   Uyy,    iyy);
+    
+    out[3] = Blend24(basis_xx,      basis_y,            ixx,       iy,  Pxx,    n );
+    out[4] = Blend42(basis_x,       basis_yy,            ix,      iyy,  Pyy,  n-2 );
+    out[5] = Blend33(basis_x_tilde, basis_y_tilde, ix_tilde, iy_tilde,  Pxy,  n-1 );
+
+    
     
     return 0;
 }
 
 int main()
 {
-    float x = 0.;
-    float y = 7.;
+    float x = 5.;
+    float y = 3.;
     
-    float out[3];
-    for (int k=0;k<1000000;k++)
+    float out[6];
+    for (int k=0;k<1e6;k++)
     {
         //printf("k = %d",k);
         EvalSpline(x,y,out);
     }
     printf("s = %f\n",out[0]);
-    printf("dsdx = %f \n",out[1]);
-    printf("dsdy = %f \n",out[2]);
+    printf("ds/dx = %f \n",out[1]);
+    printf("ds/dy = %f \n",out[2]);
+    printf("d2s/dx2 = %f \n",out[3]);
+    printf("d2s/dy2 = %f \n",out[4]);
+    printf("d2s/dxdy = %f \n",out[5]);
 }

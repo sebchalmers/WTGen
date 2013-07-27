@@ -49,6 +49,9 @@ checkpoints = tck[2]
 p           = tck[3]
 q           = tck[4]
 
+assert(p==3)
+assert(q==3)
+
 #P is size mxn, row major representation
 m           = len(knots_x)-p-1
 n           = len(knots_y)-q-1
@@ -57,27 +60,42 @@ P           = tck[2].reshape(m,n)
 Pline       = tck[2]
 
 #### Compute data for derivatives
-Px = np.zeros([m-1,n])
-for k1 in range(m-1):
-    for k2 in range(n):
-        Px[k1,k2] = p*(P[k1+1,k2] - P[k1,k2])/(knots_x[k1+p+1]- knots_x[k1+1])
-Px = Px.reshape(n*(m-1),)
+def Dx(P,knots_x,m,n,p):
+    print "p = ",p
+    Px = np.zeros([m-1,n])
+    for k1 in range(m-1):
+        for k2 in range(n):
+            Px[k1,k2] = p*(P[k1+1,k2] - P[k1,k2])/(knots_x[k1+p+1]- knots_x[k1+1])
+    Px = Px.reshape(n*(m-1),)
+    
+    Ux = [[0. for k in range(p)]]
+    Ux.append([knots_x[k] for k in range(p+1,m+1)])
+    Ux.append([1.0 for k in range(p)])
+    Ux = np.concatenate(Ux)
 
-Py = np.zeros([m,n-1])
-for k1 in range(m):
-    for k2 in range(n-1):
-        Py[k1,k2] = q*(P[k1,k2+1] - P[k1,k2])/(knots_y[k2+q+1]- knots_y[k2+1]) 
-Py = Py.reshape(m*(n-1),)
+    return Px, Ux
 
-Ux = [[0. for k in range(p)]]
-Ux.append([knots_x[k] for k in range(p+1,m+1)])
-Ux.append([1.0 for k in range(p)])
-Ux = np.concatenate(Ux)
+def Dy(P,knots_y,m,n,q):
+    print "q = ",q
+    Py = np.zeros([m,n-1])
+    for k1 in range(m):
+        for k2 in range(n-1):
+            Py[k1,k2] = q*(P[k1,k2+1] - P[k1,k2])/(knots_y[k2+q+1]- knots_y[k2+1]) 
+    Py = Py.reshape(m*(n-1),)
 
-Uy = [[0. for k in range(q)]]
-Uy.append([knots_y[k] for k in range(q+1,n+1)])
-Uy.append([1.0 for k in range(q)])
-Uy = np.concatenate(Uy)
+    Uy = [[0. for k in range(q)]]
+    Uy.append([knots_y[k] for k in range(q+1,n+1)])
+    Uy.append([1.0 for k in range(q)])
+    Uy = np.concatenate(Uy)
+
+    return Py, Uy
+
+Px, Ux = Dx(P,knots_x,m,n,p)
+Py, Uy = Dy(P,knots_y,m,n,q)
+
+Pxx, Uxx = Dx(Px.reshape(m-1,n),      Ux, m-1 ,n   , p-1)
+Pyy, Uyy = Dy(Py.reshape(m,n-1),      Uy, m   ,n-1 , q-1)
+Pxy, _   = Dy(Px.reshape(m-1,n), knots_y, m-1 ,n   ,   q)
 
 #### Write SplineData.h ####
 
@@ -118,7 +136,17 @@ varDictionary = {'n':              [n,              'int'],
                  'Ux':             [Ux,           'float'],
                  'length_Ux':      [len(Ux),        'int'],
                  'Uy':             [Uy,           'float'],
-                 'length_Uy':      [len(Uy),        'int']}
+                 'length_Uy':      [len(Uy),        'int'],
+                 'Uxx':            [Uxx,          'float'],
+                 'length_Uxx':     [len(Uxx),       'int'],
+                 'Uyy':            [Uyy,          'float'],
+                 'length_Uyy':     [len(Uyy),       'int'],
+                 'Pxx':            [Pxx,          'float'],
+                 'length_Pxx':     [len(Pxx),       'int'],
+                 'Pyy':            [Pyy,          'float'],
+                 'length_Pyy':     [len(Pyy),       'int'],
+                 'Pxy':            [Pxy,          'float'],
+                 'length_Pxy':     [len(Pxy),       'int'],}
 
 for key in varDictionary.keys():
     writeData(key, varDictionary[key][0], varDictionary[key][1], fileobj)
@@ -193,6 +221,8 @@ def Blend(x_basis, y_basis, i_x, i_y, P, n):
     return S
   
 def EvalSpline(x,y, knots_x, knots_y, checkpoints, Ux, Uy, Px, Py, p, q, n):
+    
+    #Eval spline
     ix  = findspan(x,knots_x)
     iy  = findspan(y,knots_y)
     
@@ -201,6 +231,7 @@ def EvalSpline(x,y, knots_x, knots_y, checkpoints, Ux, Uy, Px, Py, p, q, n):
     
     s = Blend(basis_x, basis_y, ix, iy, checkpoints, n)
     
+    #Eval 1st derivative
     ix_tilde = findspan(x, Ux)
     iy_tilde = findspan(y, Uy)
 
@@ -210,12 +241,26 @@ def EvalSpline(x,y, knots_x, knots_y, checkpoints, Ux, Uy, Px, Py, p, q, n):
     dsdx = Blend(basis_x_tilde, basis_y,       ix_tilde, iy,       Px, n)
     dsdy = Blend(basis_x      , basis_y_tilde, ix,       iy_tilde ,Py, n-1)
 
-    return s, dsdx, dsdy
+    #Eval curvature
+    ixx = findspan(x, Uxx)
+    iyy = findspan(y, Uyy)
+    
+    basis_xx = basisFuncs( x,   p-2,   Uxx,    ixx)
+    basis_yy = basisFuncs( y,   q-2,   Uyy,    iyy)
+   
+    dsdx = Blend(basis_x_tilde,       basis_y,    ix_tilde,          iy,   Px,    n)
+    dsdy = Blend(basis_x      , basis_y_tilde,          ix,    iy_tilde,   Py,  n-1)
+
+    dsdx2 = Blend(basis_xx,      basis_y,            ixx,       iy,  Pxx,    n)
+    dsdy2 = Blend(basis_x,       basis_yy,            ix,      iyy,  Pyy,  n-2)
+    dsdxy = Blend(basis_x_tilde, basis_y_tilde, ix_tilde, iy_tilde,  Pxy,  n-1)
+    
+    return s, dsdx, dsdy, dsdx2, dsdy2, dsdxy
 
 
 
-x = 0.
-y = 7.
+x = 5.
+y = 3.
 
 ix = findspan(x,knots_x)
 iy = findspan(y,knots_y)
@@ -247,21 +292,28 @@ print "basis_x_tilde = ", basis_x_tilde
 print "basis_y_tilde = ", basis_y_tilde
 
 z = interpolate.bisplev(x, y, tck)
-dzdx = interpolate.bisplev(x, y, tck, dx = 1, dy = 0)
-dzdy = interpolate.bisplev(x, y, tck, dx = 0, dy = 1)
+dzdx  = interpolate.bisplev(x, y, tck, dx = 1, dy = 0)
+dzdy  = interpolate.bisplev(x, y, tck, dx = 0, dy = 1)
+dzdx2 = interpolate.bisplev(x, y, tck, dx = 2, dy = 0)
+dzdy2 = interpolate.bisplev(x, y, tck, dx = 0, dy = 2)
+dzdxy = interpolate.bisplev(x, y, tck, dx = 1, dy = 1)
 
-S, dSdx, dSdy = EvalSpline(x, y, knots_x, knots_y, checkpoints, Ux, Uy, Px, Py, p, q, n)
+S, dSdx, dSdy, dSdx2, dSdy2, dSdxy = EvalSpline(x, y, knots_x, knots_y, checkpoints, Ux, Uy, Px, Py, p, q, n)
 
 print "Compare spline interp", S, z  
 print "Compare x derivative", dzdx, dSdx
 print "Compare y derivative", dzdy, dSdy
 
-x,y = np.mgrid[beta[0]:beta[-1]:0.25,lambda_[0]:lambda_[-1]:0.25]
-z = interpolate.bisplev(x[:,0],y[0,:],tck)
-fig = plt.figure(1)
-ax = fig.gca(projection='3d')
-ax.plot_wireframe(betagrid,lambdagrid,Cp)
-plt.title("Cp table")
-ax.plot_wireframe(x,y,z,color='r')
-plt.hold
-plt.show()
+print "Compare x2 derivative", dzdx2, dSdx2
+print "Compare y2 derivative", dzdy2, dSdy2
+print "Compare xy derivative", dzdxy, dSdxy
+
+#x,y = np.mgrid[beta[0]:beta[-1]:0.25,lambda_[0]:lambda_[-1]:0.25]
+#z = interpolate.bisplev(x[:,0],y[0,:],tck)
+#fig = plt.figure(1)
+#ax = fig.gca(projection='3d')
+#ax.plot_wireframe(betagrid,lambdagrid,Cp)
+#plt.title("Cp table")
+#ax.plot_wireframe(x,y,z,color='r')
+#plt.hold
+#plt.show()
