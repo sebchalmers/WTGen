@@ -1,3 +1,19 @@
+/*
+ 
+ By Sebastien Gros
+ Assistant Professor
+ 
+ Department of Signals and Systems
+ Chalmers University of Technology
+ SE-412 96 Göteborg, SWEDEN
+ 
+ Compute the evaluation of a surface B-spline (order 3), using the cox-deBoor/Böhm formula
+ Provides 1st and second-order dereivatives
+ The blending functions are code-generated in Blender.h (for-looped version commented in this code, can be used with splines of different order than 3)
+ 
+ */
+
+
 #include <stdio.h>
 
 
@@ -26,6 +42,33 @@ int findspan(float xi, const float knots[], const int lenght_knots)
 
 #include "Blender.h"  // Unrolled blending function
 
+/*
+ float Pijeval(const float mat[],int i,int j,const int n)
+ {
+ // Line major "matrix" P -> take out i,j entry
+ 
+ //printf("index = %d\n", i*n + j);
+ return mat[i*n + j];
+ }
+ 
+ 
+ float Blend(float x_basis[], float y_basis[], int i_x, int i_y, const float P[], const int n, int length_x_basis, int length_y_basis)
+ {
+ //printf("Blending \n");
+ float S = 0;
+ float x_basis_k1;
+ for (int k1 = 0; k1 < length_x_basis; k1++)
+ {
+ x_basis_k1 = x_basis[k1];
+ for (int k2 = 0; k2 < length_y_basis; k2++)
+ {
+ S += Pijeval(P,i_x-k1,i_y-k2,n)*x_basis_k1*y_basis[k2];
+ }
+ }
+ 
+ return S;
+ }
+*/
 
 //#include "BasisFunc.h"
 
