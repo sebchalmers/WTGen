@@ -26,6 +26,7 @@ lambda_ -= np.min(lambda_)
 #lambda_ /= np.max(lambda_)
 
 Cp      = np.maximum(-0.0,mat['Cp_Data'])
+#Cp      = mat['Cp_Data']
 
 beta    = beta.reshape(beta.shape[1],)
 lambda_ = lambda_.reshape(lambda_.shape[1],)
@@ -61,7 +62,6 @@ Pline       = tck[2]
 
 #### Compute data for derivatives
 def Dx(P,knots_x,m,n,p):
-    print "p = ",p
     Px = np.zeros([m-1,n])
     for k1 in range(m-1):
         for k2 in range(n):
@@ -76,7 +76,6 @@ def Dx(P,knots_x,m,n,p):
     return Px, Ux
 
 def Dy(P,knots_y,m,n,q):
-    print "q = ",q
     Py = np.zeros([m,n-1])
     for k1 in range(m):
         for k2 in range(n-1):

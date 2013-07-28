@@ -39,9 +39,10 @@ int findspan(float xi, const float knots[], const int lenght_knots)
     return index_low;
 }
 
+// Unrolled blending function
+#include "Blender.h"
 
-#include "Blender.h"  // Unrolled blending function
-
+// Original blending function
 /*
  float Pijeval(const float mat[],int i,int j,const int n)
  {
@@ -161,25 +162,58 @@ int EvalSpline(float x, float y, float out[])
 
     out[1] = Blend34(basis_x_tilde, basis_y,       ix_tilde, iy,       Px, n   );
     out[2] = Blend43(basis_x      , basis_y_tilde, ix,       iy_tilde ,Py, n-1 );
-
-    //Eval curvature
-    int ixx = findspan(x, Uxx, length_Uxx);
-    int iyy = findspan(y, Uyy, length_Uyy);
-    
-    float basis_xx[p-1];
-    float basis_yy[q-1];
-    
-    basisFuncs(basis_xx,   x,   p-2,   Uxx,    ixx);
-    basisFuncs(basis_yy,   y,   q-2,   Uyy,    iyy);
-    
-    out[3] = Blend24(basis_xx,      basis_y,            ixx,       iy,  Pxx,    n );
-    out[4] = Blend42(basis_x,       basis_yy,            ix,      iyy,  Pyy,  n-2 );
-    out[5] = Blend33(basis_x_tilde, basis_y_tilde, ix_tilde, iy_tilde,  Pxy,  n-1 );
-
-    
     
     return 0;
 }
+
+
+int EvalSpline2(float x, float y, float out[])
+{
+    
+#include "SplineData.h"
+    
+    // Eval Spline
+    int ix = findspan(x, knots_x, length_knots_x);
+    int iy = findspan(y, knots_y, length_knots_y);
+    
+    float basis_x[p+1];
+    float basis_y[q+1];
+    
+    basisFuncs(basis_x, x, p, knots_x, ix);
+    basisFuncs(basis_y, y, q, knots_y, iy);
+    
+    out[0] = Blend44(basis_x, basis_y, ix, iy, P, n);
+    
+    // Eval derivatives
+    int ix_tilde = findspan(x, Ux, length_Ux);
+    int iy_tilde = findspan(y, Uy, length_Uy);
+    
+    float basis_x_tilde[p];
+    float basis_y_tilde[q];
+    
+    basisFuncs(basis_x_tilde, x, p-1, Ux, ix_tilde);
+    basisFuncs(basis_y_tilde, y, q-1, Uy, iy_tilde);
+    
+    out[1] = Blend34(basis_x_tilde, basis_y,       ix_tilde, iy,       Px, n   );
+    out[2] = Blend43(basis_x      , basis_y_tilde, ix,       iy_tilde ,Py, n-1 );
+    
+     //Eval curvature
+     int ixx = findspan(x, Uxx, length_Uxx);
+     int iyy = findspan(y, Uyy, length_Uyy);
+     
+     float basis_xx[p-1];
+     float basis_yy[q-1];
+     
+     basisFuncs(basis_xx,   x,   p-2,   Uxx,    ixx);
+     basisFuncs(basis_yy,   y,   q-2,   Uyy,    iyy);
+     
+     out[3] = Blend24(basis_xx,      basis_y,            ixx,       iy,  Pxx,    n );
+     out[4] = Blend42(basis_x,       basis_yy,            ix,      iyy,  Pyy,  n-2 );
+     out[5] = Blend33(basis_x_tilde, basis_y_tilde, ix_tilde, iy_tilde,  Pxy,  n-1 );
+    
+    return 0;
+}
+
 
 int main()
 {
@@ -192,6 +226,13 @@ int main()
         //printf("k = %d",k);
         EvalSpline(x,y,out);
     }
+
+    for (int k=0;k<1e6;k++)
+    {
+        //printf("k = %d",k);
+        EvalSpline2(x,y,out);
+    }
+    
     printf("s = %f\n",out[0]);
     printf("ds/dx = %f \n",out[1]);
     printf("ds/dy = %f \n",out[2]);
