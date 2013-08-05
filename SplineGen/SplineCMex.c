@@ -8,7 +8,7 @@
  SE-412 96 Göteborg, SWEDEN
  
  Compute the evaluation of a surface B-spline (order 3), using the cox-deBoor/Böhm formula
- Provides 1st and second-order dereivatives
+ Provides 1st and second-order derivatives (function EvalSpline) or 1st and 2nd (function EvalSpline2)
  The blending functions are code-generated in Blender.h (for-looped version commented in this code, can be used with splines of different order than 3)
  
  */
@@ -245,8 +245,8 @@ void mexFunction(
     
     EvalSpline2(*ptr_x,*ptr_y,out);
     
-    mexPrintf("Beta  :%f \n ",*ptr_x);
-    mexPrintf("Lambda:%f \n ",*ptr_y);
+    //mexPrintf("Beta  :%f \n ",*ptr_x);
+    //mexPrintf("Lambda:%f \n ",*ptr_y);
     
     
     for (i=0;i<6;i++)
