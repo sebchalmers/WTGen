@@ -20,13 +20,14 @@ mat = scipy.io.loadmat('AeroData.mat')
 beta    = mat['beta_Data']
 lambda_ = mat['lambda_Data']
 
-beta -= np.min(beta)
-#beta /= np.max(beta)
-lambda_ -= np.min(lambda_)
-#lambda_ /= np.max(lambda_)
+beta_shift   = np.min(beta)
+lambda_shift = np.min(lambda_)
 
-Cp      = np.maximum(-0.0,mat['Cp_Data'])
-#Cp      = mat['Cp_Data']
+beta -= beta_shift
+lambda_ -= lambda_shift
+
+#Cp      = np.maximum(-0.0,mat['Cp_Data'])
+Cp      = mat['Cp_Data']
 
 beta    = beta.reshape(beta.shape[1],)
 lambda_ = lambda_.reshape(lambda_.shape[1],)
@@ -100,9 +101,11 @@ Pxy, _   = Dy(Px.reshape(m-1,n), knots_y, m-1 ,n   ,   q)
 
 def writeData(varname, data, vartype, fileobj):
     # Function to write a given variable
-    if isinstance(data,int):
+    print isinstance(data,list)
+    if not(isinstance(data,list)):
         Line = 'const ' + vartype+' ' + varname + ' = ' + str(data) + ';'
     else:
+        
         Line = 'const ' + vartype+' ' + varname + '[' + str(len(data)) + '] = {'
         lendata = len(data)
         for k in range(lendata):
@@ -122,30 +125,32 @@ varDictionary = {'n':              [n,              'int'],
                  'm':              [m,              'int'],
                  'p':              [p,              'int'],
                  'q':              [q,              'int'],
-                 'knots_x':        [knots_x,      'float'],
+                 'x_shift':        [beta_shift,   'float'],
+                 'y_shift':        [lambda_shift, 'float'], 
+                 'knots_x':        [list(knots_x),'float'],
                  'length_knots_x': [len(knots_x),   'int'],
-                 'knots_y':        [knots_y,      'float'],
+                 'knots_y':        [list(knots_y),'float'],
                  'length_knots_y': [len(knots_y),   'int'],
-                 'P':              [Pline,        'float'],
+                 'P':              [list(Pline),  'float'],
                  'length_P':       [len(Pline),     'int'],
-                 'Px':             [Px,           'float'],
+                 'Px':             [list(Px),           'float'],
                  'length_Px':      [len(Px),        'int'],
-                 'Py':             [Py,           'float'],
+                 'Py':             [list(Py),           'float'],
                  'length_Py':      [len(Py),        'int'],
-                 'Ux':             [Ux,           'float'],
+                 'Ux':             [list(Ux),           'float'],
                  'length_Ux':      [len(Ux),        'int'],
-                 'Uy':             [Uy,           'float'],
+                 'Uy':             [list(Uy),           'float'],
                  'length_Uy':      [len(Uy),        'int'],
-                 'Uxx':            [Uxx,          'float'],
+                 'Uxx':            [list(Uxx),          'float'],
                  'length_Uxx':     [len(Uxx),       'int'],
-                 'Uyy':            [Uyy,          'float'],
+                 'Uyy':            [list(Uyy),          'float'],
                  'length_Uyy':     [len(Uyy),       'int'],
-                 'Pxx':            [Pxx,          'float'],
+                 'Pxx':            [list(Pxx),          'float'],
                  'length_Pxx':     [len(Pxx),       'int'],
-                 'Pyy':            [Pyy,          'float'],
+                 'Pyy':            [list(Pyy),          'float'],
                  'length_Pyy':     [len(Pyy),       'int'],
-                 'Pxy':            [Pxy,          'float'],
-                 'length_Pxy':     [len(Pxy),       'int'],}
+                 'Pxy':            [list(Pxy),          'float'],
+                 'length_Pxy':     [len(Pxy),       'int']}
 
 for key in varDictionary.keys():
     writeData(key, varDictionary[key][0], varDictionary[key][1], fileobj)

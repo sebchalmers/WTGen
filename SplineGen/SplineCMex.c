@@ -15,7 +15,7 @@
 
 
 #include <stdio.h>
-
+#include "mex.h"
 
 int findspan(float xi, const float knots[], const int lenght_knots)
 {
@@ -91,19 +91,22 @@ int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
     float Ui     = U[i];
     float Den    = Uiplus - U[i];
     
+    int k = 0;
+    int p = 0;
+    
     //Compute the first step (special branch, p=1, Ni,0 = 1)
     basis[0] = (xi     - Ui) / Den;
     basis[1] = (Uiplus -   xi) / Den;
     
     
     //Clear out the remaining values of basis
-    for (int k = 2; k < order+1; k++)
+    for (k = 2; k < order+1; k++)
     {
         basis[k] = 0;
     }
     
     //These loops could be unrolled into two different functions, depending on the order (2 or 3)
-    for (int p = 2; p < order+1; p++)
+    for (p = 2; p < order+1; p++)
     {
         pminus   = p-1;
         
@@ -111,7 +114,7 @@ int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
         Den  = Uiplus - U[i-pminus];
         basis[p] = (Uiplus - xi)*basis[pminus] / Den;
 
-        for (int k=p-1; k > 0; k--)
+        for (k=p-1; k > 0; k--)
         {
             //Flat arrow
             basis[k]  = (xi - U[i-k])*basis[k] / Den;
@@ -222,29 +225,36 @@ int EvalSpline2(float x, float y, float out[])
     return 0;
 }
 
-
-int main()
+void mexFunction(
+                 int nlhs, mxArray *plhs[],
+                 int nrhs, const mxArray *prhs[])
 {
-    float x = 5.;
-    float y = 3.;
-    
-    float out[6];
-    for (int k=0;k<1e6;k++)
-    {
-        //printf("k = %d",k);
-        EvalSpline(x,y,out);
-    }
 
-    for (int k=0;k<1e6;k++)
-    {
-        //printf("k = %d",k);
-        EvalSpline2(x,y,out);
-    }
+    double *ptr_x;
+    double *ptr_y;
+    float out[6];
+    int i;
     
-    printf("s = %f\n",out[0]);
-    printf("ds/dx = %f \n",out[1]);
-    printf("ds/dy = %f \n",out[2]);
-    printf("d2s/dx2 = %f \n",out[3]);
-    printf("d2s/dy2 = %f \n",out[4]);
-    printf("d2s/dxdy = %f \n",out[5]);
+    ptr_x = mxGetPr(prhs[0]);
+    ptr_y = mxGetPr(prhs[1]);
+    
+    plhs[0] = mxCreateDoubleMatrix(6, 1, mxREAL);
+
+    double *Out;
+    Out = mxGetPr(plhs[0]);
+    
+    EvalSpline2(*ptr_x,*ptr_y,out);
+    
+    mexPrintf("Beta  :%f \n ",*ptr_x);
+    mexPrintf("Lambda:%f \n ",*ptr_y);
+    
+    
+    for (i=0;i<6;i++)
+    {
+        Out[i] = out[i];
+    }
+   
+        
 }
+
+
