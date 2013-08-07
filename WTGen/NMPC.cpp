@@ -42,12 +42,12 @@ int main( int argc, char * const argv[] ){
 	}
 	//======================================================================	
 	
-	const int Ncvp  = (int)IC[0];       // = 50
-	const double Tc = IC[1];       // = 10
-    const int IntegratorSteps = (int)IC[2];// =  2 * 50
+	const int Ncvp  = 50;
+	const double Tc =  10;
+    const int IntegratorSteps = 2 * 50;
 	
-    const double n_XD = 8;
-    const double n_U = 5;
+    const double n_XD = 6;
+    const double n_U = 3;
      
     USING_NAMESPACE_ACADO
 
@@ -59,15 +59,15 @@ int main( int argc, char * const argv[] ){
     DifferentialState dtheta;   // Pitch rate
     DifferentialState Mg;       // Generator Torque
     
-    DifferentialState Sigma_Omega;    // Dummy state to match the slack
-    DifferentialState Sigma_Pow;    // Dummy state to match the slack
+   // DifferentialState Sigma_Omega;    // Dummy state to match the slack
+   // DifferentialState Sigma_Pow;    // Dummy state to match the slack
  
     // CONTROL :
     // -------------------------
 	Control	    ddtheta;        // Pitch acceleration
     Control     dMg;            // Generator torqe rate  
-    Control     S_Omega;              // Slack variable
-    Control     S_Pow;              // Slack variable
+   // Control     S_Omega;              // Slack variable
+   // Control     S_Pow;              // Slack variable
     
     Control     v0;             // LIDAR wind profile
   
@@ -114,14 +114,14 @@ int main( int argc, char * const argv[] ){
     
     Cp1(theta,lambda,out);
     IntermediateState Cp         = out[0];
-    IntermediateState dCpdtheta  = out[1];
-    IntermediateState dCpdlambda = out[2];
+    IntermediateState dCp_dtheta  = out[1];
+    IntermediateState dCp_dlambda = out[2];
     
 
     Ct1(theta,lambda,out);
     IntermediateState Ct         = out[0];
-    IntermediateState dCtdtheta  = out[1];
-    IntermediateState dCtdlambda = out[2];
+    IntermediateState dCt_dtheta  = out[1];
+    IntermediateState dCt_dlambda = out[2];
      
     IntermediateState MA = 0.5*rho*PI*R*R*R*Cp*vrel*vrel/lambda;
     IntermediateState FA = 0.5*rho*PI*R*R*Ct*vrel*vrel;
@@ -151,8 +151,8 @@ int main( int argc, char * const argv[] ){
     f  << dot(dtheta)  ==  ddtheta                            ;
     f  << dot(Mg)	   ==  dMg                            ;	   
  	
-  	f  << dot(Sigma_Omega) ==  S_Omega - a_Omega*Sigma_Omega                            ;
-    f  << dot(Sigma_Pow)   ==  S_Pow - a_Pow*Sigma_Pow                            ;
+  	//f  << dot(Sigma_Omega) ==  S_Omega - a_Omega*Sigma_Omega                       ;
+    //f  << dot(Sigma_Pow)   ==  S_Pow - a_Pow*Sigma_Pow                            ;
      
     // DEFINE AN OPTIMAL CONTROL PROBLEM:
     // ----------------------------------
