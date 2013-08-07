@@ -105,32 +105,31 @@ int main( int argc, char * const argv[] ){
 
     
     
-// Interpolation of the look-up tables    
-//Cp interpolation
+// Interpolation of the look-up tables
     
     float out[6];
     
-    #include CpCt
+    #include CpCt    //Bunch of functions for evaluating the look-up tables
     
-    Cp1(theta,lambda,out);
-    IntermediateState Cp         = out[0];
-    IntermediateState dCp_dtheta  = out[1];
-    IntermediateState dCp_dlambda = out[2];
+    Cp1(theta,lambda,out);                  // Evaluates Cp, 0 = no sens. / 1 = 1st-order / 2 = 2nd-order
+    IntermediateState Cp         = out[0];  // Value of Cp
+    IntermediateState dCp_dtheta  = out[1]; // Sensitivity of Cp w.r.t. theta
+    IntermediateState dCp_dlambda = out[2]; // Sensitivity of Cp w.r.t. lambda
     
 
-    Ct1(theta,lambda,out);
-    IntermediateState Ct         = out[0];
-    IntermediateState dCt_dtheta  = out[1];
-    IntermediateState dCt_dlambda = out[2];
-     
+    Ct1(theta,lambda,out);                    // Evaluates Cp, 0 = no sens. / 1 = 1st-order / 2 = 2nd-order
+    IntermediateState Ct         = out[0];    // Value of Cp
+    IntermediateState dCt_dtheta  = out[1];   // Sensitivity of Cp w.r.t. theta
+    IntermediateState dCt_dlambda = out[2];   // Sensitivity of Cp w.r.t. lambda
+    
+////////////////////////////////////////
+    
     IntermediateState MA = 0.5*rho*PI*R*R*R*Cp*vrel*vrel/lambda;
     IntermediateState FA = 0.5*rho*PI*R*R*Ct*vrel*vrel;
    
 //// THE EQUATIONS OF MOTION:
 //// ---------------------------------------------------------------
 
-   
-    //IntermediateState Pel = 1e-6*eta*Mg*Omega/i;  
   
     IntermediateState dOmega = (MA - Mgfactor*Mg/iratio)/J;   // Rotor acceleration
     IntermediateState ddxT = (FA - cT*dxT - kT*xT)/mTe;  // Tower acceleration
