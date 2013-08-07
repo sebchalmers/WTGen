@@ -2,8 +2,7 @@ clear all
 close all
 clc
 
-mex /Users/sebastien/Desktop/WTGen/SplineGen/SplineCMex.c
-!cp /Users/sebastien/Desktop/WTGen/SplineGen/SplineCMex.c /Users/sebastien/Desktop/WTGen/TestHessianApprox
+mex /Users/sebastien/Desktop/WTGen/SplineGen/CpMex.c
 
 R = 60;
 W = 10;
@@ -13,7 +12,7 @@ beta = 15
 omega = 6*2*pi/60;
 lambda = R*omega/W
 
-X = SplineCMex(beta,lambda);
+X = CpMex(beta,lambda);
 
 Cp               = X(1)
 dCpdbeta         = X(2);

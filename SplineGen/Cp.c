@@ -8,14 +8,14 @@
  SE-412 96 Göteborg, SWEDEN
  
  Compute the evaluation of a surface B-spline (order 3), using the cox-deBoor/Böhm formula
- Provides 1st and second-order dereivatives
+ Provides 1st and second-order derivatives (function EvalSpline) or 1st and 2nd (function EvalSpline2)
  The blending functions are code-generated in Blender.h (for-looped version commented in this code, can be used with splines of different order than 3)
  
  */
 
 
 #include <stdio.h>
-#include "mex.h"
+  
 
 int findspan(float xi, const float knots[], const int lenght_knots)
 {
@@ -91,22 +91,19 @@ int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
     float Ui     = U[i];
     float Den    = Uiplus - U[i];
     
-    int k = 0;
-    int p = 0;
-    
     //Compute the first step (special branch, p=1, Ni,0 = 1)
     basis[0] = (xi     - Ui) / Den;
     basis[1] = (Uiplus -   xi) / Den;
     
     
     //Clear out the remaining values of basis
-    for (k = 2; k < order+1; k++)
+    for (int k = 2; k < order+1; k++)
     {
         basis[k] = 0;
     }
     
     //These loops could be unrolled into two different functions, depending on the order (2 or 3)
-    for (p = 2; p < order+1; p++)
+    for (int p = 2; p < order+1; p++)
     {
         pminus   = p-1;
         
@@ -114,7 +111,7 @@ int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
         Den  = Uiplus - U[i-pminus];
         basis[p] = (Uiplus - xi)*basis[pminus] / Den;
 
-        for (k=p-1; k > 0; k--)
+        for (int k=p-1; k > 0; k--)
         {
             //Flat arrow
             basis[k]  = (xi - U[i-k])*basis[k] / Den;
@@ -134,12 +131,34 @@ int basisFuncs(float basis[], float xi, const int order, const float U[], int i)
 
 
 
-
-
-int EvalSpline(float x, float y, float out[])
+int EvalSpline0(float x, float y, float out[])
 {
     
-    #include "SplineData.h"
+    #include "Cp.h"
+    
+    //interpolation points >= 0
+    x -= x_shift;
+    y -= y_shift;
+    
+    // Eval Spline
+    int ix = findspan(x, knots_x, length_knots_x);
+    int iy = findspan(y, knots_y, length_knots_y);
+    
+    float basis_x[p+1];
+    float basis_y[q+1];
+    
+    basisFuncs(basis_x, x, p, knots_x, ix);
+    basisFuncs(basis_y, y, q, knots_y, iy);
+    
+    out[0] = Blend44(basis_x, basis_y, ix, iy, P, n);
+    
+    return 0;
+}
+
+int EvalSpline1(float x, float y, float out[])
+{
+    
+    #include "Cp.h"
     
     //interpolation points >= 0
     x -= x_shift;
@@ -177,7 +196,7 @@ int EvalSpline(float x, float y, float out[])
 int EvalSpline2(float x, float y, float out[])
 {
     
-    #include "SplineData.h"
+    #include "Cp.h"
     
     //interpolation points >= 0
     x -= x_shift;
@@ -225,36 +244,35 @@ int EvalSpline2(float x, float y, float out[])
     return 0;
 }
 
-void mexFunction(
-                 int nlhs, mxArray *plhs[],
-                 int nrhs, const mxArray *prhs[])
+
+int main()
 {
-
-    double *ptr_x;
-    double *ptr_y;
+    float x = 5.;
+    float y = 3.;
+    
     float out[6];
-    int i;
-    
-    ptr_x = mxGetPr(prhs[0]);
-    ptr_y = mxGetPr(prhs[1]);
-    
-    plhs[0] = mxCreateDoubleMatrix(6, 1, mxREAL);
-
-    double *Out;
-    Out = mxGetPr(plhs[0]);
-    
-    EvalSpline2(*ptr_x,*ptr_y,out);
-    
-    //mexPrintf("Beta  :%f \n ",*ptr_x);
-    //mexPrintf("Lambda:%f \n ",*ptr_y);
-    
-    
-    for (i=0;i<6;i++)
+    for (int k=0;k<1e6;k++)
     {
-        Out[i] = out[i];
+        //printf("k = %d",k);
+        EvalSpline0(x,y,out);
     }
-   
-        
+
+    for (int k=0;k<1e6;k++)
+    {
+        //printf("k = %d",k);
+        EvalSpline1(x,y,out);
+    }
+    
+    for (int k=0;k<1e6;k++)
+    {
+        //printf("k = %d",k);
+        EvalSpline2(x,y,out);
+    }
+    
+    printf("s = %f\n",out[0]);
+    printf("ds/dx = %f \n",out[1]);
+    printf("ds/dy = %f \n",out[2]);
+    printf("d2s/dx2 = %f \n",out[3]);
+    printf("d2s/dy2 = %f \n",out[4]);
+    printf("d2s/dxdy = %f \n",out[5]);
 }
-
-
